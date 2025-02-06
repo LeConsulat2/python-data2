@@ -13,10 +13,9 @@ import numpy as np
 # plt.style.use("seaborn-v0_8")
 # sns.set_palette("Blues_r")
 
-# 흰 배경
-# 스타일 설정
+# 흰 배경 + 스타일 설정
 # sns.set_style("whitegrid")
-# fig = plt.figure(figsize=(20, 14))  # 세로 크기 증가
+# fig = plt.figure(figsize=(20, 14))  20 가로 / 14 세로로
 
 ############### 여기부터 다크 테마 설정 추가 ###############
 # 테마 및 스타일 설정 다크 = dark_background
