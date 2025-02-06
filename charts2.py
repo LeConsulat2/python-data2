@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
+
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_1.png ###############
+
 # Set style properly
 plt.style.use("seaborn-v0_8")
 sns.set_palette("Blues_r")
