@@ -4,29 +4,34 @@ import seaborn as sns
 import numpy as np
 
 
-############### TO  SEE THE RESULT, PLEASE REFER TO Figure_1.png ###############
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_4.png ###############
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_4.png ###############
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_4.png ###############
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_4.png ###############
 
 # Set style properly
-plt.style.use("seaborn-v0_8")
-sns.set_palette("Blues_r")
-
-############### 여기부터 다크 테마 설정 추가 ###############
-# 다크 테마 및 스타일 설정
-# plt.style.use("dark_background")
-# fig = plt.figure(figsize=(18, 10))
-# fig.patch.set_facecolor("#0E1117")  # 전체 배경
+# plt.style.use("seaborn-v0_8")
+# sns.set_palette("Blues_r")
 
 # 흰 배경
 # 스타일 설정
 # sns.set_style("whitegrid")
 # fig = plt.figure(figsize=(20, 14))  # 세로 크기 증가
 
+############### 여기부터 다크 테마 설정 추가 ###############
+# 테마 및 스타일 설정 다크 = dark_background
+plt.style.use("seaborn-v0_8-notebook")
+sns.set_palette("Blues_r")
+fig = plt.figure(figsize=(16, 10))  # 16 가로 / 10 세로로
+fig.patch.set_facecolor("#0E1117")  # 전체 배경
+
+
 # 스타일 파라미터 설정
-# plt.rcParams["axes.facecolor"] = "#0E1117"  # 그래프 배경
-# plt.rcParams["text.color"] = "white"  # 텍스트 색상
-# plt.rcParams["axes.labelcolor"] = "white"  # 축 레이블 색상
-# plt.rcParams["xtick.color"] = "white"  # x축 눈금 색상
-# plt.rcParams["ytick.color"] = "white"  # y축 눈금 색상
+plt.rcParams["axes.facecolor"] = "#0E1117"  # 그래프 배경
+plt.rcParams["text.color"] = "white"  # 텍스트 색상
+plt.rcParams["axes.labelcolor"] = "white"  # 축 레이블 색상
+plt.rcParams["xtick.color"] = "white"  # x축 눈금 색상
+plt.rcParams["ytick.color"] = "white"  # y축 눈금 색상
 ############### 다크 테마 설정 끝 ###############
 
 # Data preparation (same as before)
@@ -57,8 +62,20 @@ data_by_country = {
     "USA": [40, 42, 47, 24, 66],
 }
 
+# figure 생성
+# fig = plt.figure(figsize=(20, 16))
+# fig.patch.set_facecolor("#0E1117")  # 전체 배경
+
+# 스타일 파라미터 설정
+plt.rcParams["axes.facecolor"] = "#0E1117"  # 그래프 배경
+plt.rcParams["text.color"] = "white"  # 텍스트 색상
+plt.rcParams["axes.labelcolor"] = "white"  # 축 레이블 색상
+plt.rcParams["xtick.color"] = "white"  # x축 눈금 색상
+plt.rcParams["ytick.color"] = "white"  # y축 눈금 색상
+############### 다크 테마 설정 끝 ###############
+
 # Create figure with more height and adjust spacing
-fig = plt.figure(figsize=(20, 16))
+
 plt.subplots_adjust(hspace=0.4, wspace=0.3)  # Increase spacing between subplots
 
 # 메인 타이틀 위치 조정
@@ -82,7 +99,7 @@ reasons_df = pd.DataFrame(reasons_data)
 bars = sns.barplot(
     data=reasons_df, x="Count", y="Reason", color="#1f77b4"
 )  # x="Count", y="Reason",
-plt.title("Top Reasons for M&A", pad=20, fontsize=14, fontweight="bold")
+plt.title("Top 10 Reasons for M&A", pad=20, fontsize=14, fontweight="bold")
 
 # 축 레이블 제거
 plt.xlabel("")
@@ -110,7 +127,7 @@ for i, year in enumerate(years):
 plt.ylabel("Number of M&A Activities")
 plt.title("M&A Activities by Country and Year", pad=20, fontsize=14, fontweight="bold")
 plt.xticks(x + width * 2, countries)
-plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+plt.legend(bbox_to_anchor=(1.15, 1), loc="upper right")
 
 # 3. Quarterly trends
 ax3 = plt.subplot(2, 2, 3)
@@ -133,8 +150,11 @@ for year in years:
 plt.title("Quarterly M&A Trends", pad=20, fontsize=14, fontweight="bold")
 plt.xlabel("Quarter")
 plt.ylabel("Number of Deals")
-plt.legend()
+plt.legend(
+    bbox_to_anchor=(-0.30, 1), loc="upper left"
+)  # 0.05는 왼쪽 5% 위치, loc를 upper left로 변경
 plt.grid(True)
+
 
 # 4. Sector distribution donut chart
 ax4 = plt.subplot(

@@ -3,6 +3,9 @@ import seaborn as sns
 import pandas as pd
 
 ############### TO  SEE THE RESULT, PLEASE REFER TO Figure_2.png ###############
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_2.png ###############
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_2.png ###############
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_2.png ###############
 
 
 def create_visualizations():
@@ -89,7 +92,7 @@ def create_visualizations():
     table = plt.table(
         cellText=table_data,
         loc="right",
-        bbox=[1.3, 0.0, 1.3, 1.3],  # Left, Bottom, Width, Height
+        bbox=[1.2, 0.0, 1.3, 1.3],  # [1.3, 0.0, 1.3, 1.3]에서 첫 번째 값을 1.2로 수정
         cellLoc="left",
     )
 
