@@ -26,9 +26,18 @@ fig = plt.figure(figsize=(16, 10))  # 16 가로 / 10 세로로
 fig.patch.set_facecolor("#0E1117")  # 전체 배경
 
 
+"""
+fig는 matplotlib의 Figure 객체입니다:
+fig = plt.figure()는 matplotlib.pyplot (plt)에서 새로운 그래프 창을 생성
+plt는 matplotlib.pyplot의 약자
+Figure는 전체 그래프 창을 의미하며, 여러 개의 서브플롯(subplot)을 포함할 수 있음
+plt.rcParams는 matplotlib의 런타임 설정(runtime configuration parameters)입니다:
+rc는 "runtime configuration"의 약자
+"""
+
 # 스타일 파라미터 설정
 plt.rcParams["axes.facecolor"] = "#0E1117"  # 그래프 배경
-plt.rcParams["text.color"] = "white"  # 텍스트 색상
+plt.rcParams["text.color"] = "white"  # 모든 텍스트 색상
 plt.rcParams["axes.labelcolor"] = "white"  # 축 레이블 색상
 plt.rcParams["xtick.color"] = "white"  # x축 눈금 색상
 plt.rcParams["ytick.color"] = "white"  # y축 눈금 색상
@@ -62,20 +71,8 @@ data_by_country = {
     "USA": [40, 42, 47, 24, 66],
 }
 
-# figure 생성
-# fig = plt.figure(figsize=(20, 16))
-# fig.patch.set_facecolor("#0E1117")  # 전체 배경
-
-# 스타일 파라미터 설정
-plt.rcParams["axes.facecolor"] = "#0E1117"  # 그래프 배경
-plt.rcParams["text.color"] = "white"  # 텍스트 색상
-plt.rcParams["axes.labelcolor"] = "white"  # 축 레이블 색상
-plt.rcParams["xtick.color"] = "white"  # x축 눈금 색상
-plt.rcParams["ytick.color"] = "white"  # y축 눈금 색상
-############### 다크 테마 설정 끝 ###############
 
 # Create figure with more height and adjust spacing
-
 plt.subplots_adjust(hspace=0.4, wspace=0.3)  # Increase spacing between subplots
 
 # 메인 타이틀 위치 조정
