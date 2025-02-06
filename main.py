@@ -2,13 +2,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-############### 첫 번째 create_visualizations() 함수 완전 삭제 ###############
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_1.png ###############
 
 
 def create_visualizations():
     # Table sheet만 로드
     df_table = pd.read_excel(
-        "University_Data.xlsx",
+        "./data/University_Data.xlsx",
         sheet_name="Table",
         engine="openpyxl",
     )

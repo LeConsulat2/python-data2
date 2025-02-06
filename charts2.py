@@ -7,6 +7,25 @@ import numpy as np
 plt.style.use("seaborn-v0_8")
 sns.set_palette("Blues_r")
 
+############### 여기부터 다크 테마 설정 추가 ###############
+# 다크 테마 및 스타일 설정
+# plt.style.use("dark_background")
+# fig = plt.figure(figsize=(18, 10))
+# fig.patch.set_facecolor("#0E1117")  # 전체 배경
+
+# 흰 배경
+# 스타일 설정
+# sns.set_style("whitegrid")
+# fig = plt.figure(figsize=(20, 14))  # 세로 크기 증가
+
+# 스타일 파라미터 설정
+# plt.rcParams["axes.facecolor"] = "#0E1117"  # 그래프 배경
+# plt.rcParams["text.color"] = "white"  # 텍스트 색상
+# plt.rcParams["axes.labelcolor"] = "white"  # 축 레이블 색상
+# plt.rcParams["xtick.color"] = "white"  # x축 눈금 색상
+# plt.rcParams["ytick.color"] = "white"  # y축 눈금 색상
+############### 다크 테마 설정 끝 ###############
+
 # Data preparation (same as before)
 reasons_data = {
     "Reason": [
@@ -49,7 +68,7 @@ plt.subplots_adjust(
     top=0.90,  # top 값을 0.85에서 0.90으로 수정 (서브플롯을 아래로)
     bottom=0.15,
     left=0.2,
-    right=0.8,
+    right=0.87,
     wspace=0.3,
     hspace=0.4,
 )
@@ -57,9 +76,14 @@ plt.subplots_adjust(
 # 1. Top reasons bar chart
 ax1 = plt.subplot(2, 2, 1)
 reasons_df = pd.DataFrame(reasons_data)
-bars = sns.barplot(data=reasons_df, x="Count", y="Reason", color="#1f77b4")
+bars = sns.barplot(
+    data=reasons_df, x="Count", y="Reason", color="#1f77b4"
+)  # x="Count", y="Reason",
 plt.title("Top Reasons for M&A", pad=20, fontsize=14, fontweight="bold")
-plt.xlabel("Count")
+
+# 축 레이블 제거
+plt.xlabel("")
+plt.ylabel("")
 # x축 레이블 회전 없음
 plt.xticks(rotation=0)
 
