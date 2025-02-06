@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-############### TO  SEE THE RESULT, PLEASE REFER TO Figure_1.png ###############
+############### TO  SEE THE RESULT, PLEASE REFER TO Figure_2.png ###############
 
 
 def create_visualizations():
@@ -35,7 +35,7 @@ def create_visualizations():
     plt.rcParams["ytick.color"] = "white"  # y축 눈금 색상
     ############### 다크 테마 설정 끝 ###############
 
-    # 메인 타이틀 추가
+    # 메인 타이틀 위치 조정
     fig.suptitle(
         "Analysis of University Programme Distribution",
         fontsize=24,
@@ -43,13 +43,15 @@ def create_visualizations():
         y=0.95,
     )
 
-    # 1. Bar Chart (상위 15개 학과만) - 가로 버전
+    # 1. Bar Chart (상위 10개 학과만) - 가로 버전
     plt.subplot(2, 2, 1)
     dept_counts = df_table["Department"].value_counts().head(10)
     sns.barplot(y=dept_counts.index, x=dept_counts.values, palette="viridis")
-    plt.title("Top 10 Programmers by Department", pad=20, fontsize=12)
+    plt.title("Top 10 Programmes by Department", pad=20, fontsize=12)
     # plt.xlabel("Count", fontsize=10)
-    plt.ylabel("Department", fontsize=10)
+    # plt.ylabel("Department", fontsize=10)
+    plt.xlabel("")
+    plt.ylabel("")
 
     # 2. Pie Chart와 데이터 테이블
     plt.subplot(2, 2, 2)
@@ -60,7 +62,7 @@ def create_visualizations():
         autopct="%1.1f%%",
         colors=sns.color_palette("pastel"),
     )
-    plt.title("Distribution of Qualification Levels", pad=20, fontsize=12)
+    plt.title("Distribution of Qualification Levels", pad=15, fontsize=12)
 
     # Department별 Total Size 평균 계산 (상위 8개)
     dept_size = (
@@ -84,11 +86,10 @@ def create_visualizations():
         table_data.append([dept, f"{size:.1f}"])  # size를 소수점 1자리로 포맷팅
 
     # 테이블 추가 (위치와 크기 조정)
-    # bbox 방식 -> [left, bottom, width, height]
     table = plt.table(
         cellText=table_data,
         loc="right",
-        bbox=[1.5, 0.0, 1.5, 1.5],
+        bbox=[1.3, 0.0, 1.3, 1.3],  # Left, Bottom, Width, Height
         cellLoc="left",
     )
 
