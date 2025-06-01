@@ -5,7 +5,7 @@ import json
 import re
 from dotenv import load_dotenv
 import os
-import google.generativeai as genai # 주석: Gemini API를 위한 새로운 임포트
+import google.generativeai as genai # 주석: Gemini API를 위한 임포트
 import numpy as np # 주석: 코드 실행 시 numpy를 사용할 수 있도록 미리 임포트 (exec 환경에 주입)
 
 # 주석: 환경 변수 로드 (예: .env 파일에서 GEMINI_API_KEY 로드)
@@ -25,10 +25,11 @@ except Exception as e:
     st.stop()
 
 # --- LLM API Configuration ---
-# 주석: LLM 모델 이름 정의. Gemini 1.5 Flash는 빠른 응답과 대규모 컨텍스트를 제공합니다.
-GEMINI_MODEL_NAME = "gemini-1.5-flash"
+# 주석: LLM 모델 이름 정의. 사용자의 요청에 따라 "gemini-2.0-flash"로 설정합니다.
+# 주석: 이 모델은 빠른 응답과 대규모 컨텍스트를 제공합니다.
+GEMINI_MODEL_NAME = "gemini-2.0-flash"
 TEMPERATURE = 0.2  # 주석: LLM의 창의성 조절. 0에 가까울수록 일관되고 예측 가능한 답변.
-MAX_OUTPUT_TOKENS = 4096 # 주석: LLM 응답의 최대 토큰 수. 코드 생성에 충분한 크기.
+MAX_OUTPUT_TOKENS = 8192 # 주석: LLM 응답의 최대 토큰 수. 코드 생성에 충분한 크기.
 
 # --- LLM Call Function ---
 def call_gemini_api(prompt: str) -> str:
@@ -69,12 +70,9 @@ def generate_code_prompt(user_query: str, df_preview: dict, df_types: dict) -> s
     # 주석: 사용자 질의와 DataFrame의 미리보기 및 타입 정보를 기반으로 Python 코드 생성을 위한 프롬프트를 생성합니다.
     # 주석: 이 프롬프트는 LLM이 견고하고 정확한 Pandas 코드를 생성하도록 상세한 지침을 포함합니다.
     """
-    # 주석: DataFrame 미리보기 및 타입 정보를 JSON 문자열로 변환합니다.
-    # 주석: ensure_ascii=False는 한국어 문자를 올바르게 포함하기 위해 중요합니다.
     preview_str = json.dumps(df_preview, ensure_ascii=False, indent=2)
     types_str = json.dumps(df_types, ensure_ascii=False, indent=2)
 
-    # 주석: 코드 생성 프롬프트 구성. LLM의 역할을 명확히 하고, 기대하는 코드의 특성을 상세히 설명합니다.
     prompt = f"""
     You are an expert Python data analyst assistant. Your task is to generate robust and correct Pandas Python code to analyze a DataFrame named `df`.
     The code will be executed in an environment where `pandas` is imported as `pd`, and `numpy` is imported as `np`.
@@ -94,22 +92,73 @@ def generate_code_prompt(user_query: str, df_preview: dict, df_types: dict) -> s
     **Crucial Instructions for Code Generation:**
     1.  **Assume `df` is loaded:** Your code should operate on a DataFrame variable already named `df`.
     2.  **Return `final_df`:** The ultimate result of your analysis MUST be assigned to a new Pandas DataFrame variable named `final_df`. This `final_df` will be used for further summarization.
-    3.  **Contextual Results:** Even if the user's query asks for a single metric (e.g., maximum, minimum, top 1 item), the `final_df` must provide **full relevant context**. For example, if the query is "Which district has the highest building floor count?", `final_df` should return a DataFrame that includes the district, the floor count, and possibly other related columns, sorted or filtered to highlight the answer, not just the name of the top district. This provides a richer and verifiable context.
+    3.  **Contextual Results:** Even if the user's query asks for a single metric (e.g., maximum, minimum, top 1 item), the `final_df` must provide **full relevant context**. For example, if the query is "Which item has the highest sales?", `final_df` should return a DataFrame that includes the item, its sales, and possibly other related columns, sorted or filtered to highlight the answer, not just the name of the top item. This provides a richer and verifiable context.
     4.  **Handle Data Issues Robustly:**
         *   **Missing Values (NaNs):** Be prepared to handle `NaN`s using methods like `.dropna()`, `.fillna()`, or by ensuring aggregation methods gracefully handle missing data.
         *   **Incorrect Data Types:** Explicitly convert column types using `.astype()` (e.g., `pd.to_numeric(df['col'], errors='coerce')`, `df['col'].astype(str)`, `pd.to_datetime(df['col'], errors='coerce')`) *before* performing numerical, date, or string operations if the inferred types in `df_types` might cause errors. Use `errors='coerce'` for numeric/datetime conversions to turn unparseable values into `NaN` instead of raising an error.
-        *   **Key Errors:** Double-check column names against `df_preview` and `df_types` to avoid `KeyError` if a column name is slightly off.
+        *   **Key Errors:** Double-check column names against `df_preview` and `df_types` to avoid `KeyError` if a column name is slightly off. If a specific column is requested in the query but not present in `df_types`, consider returning an informative `pd.DataFrame({"Error": ["Column not found"]})` assigned to `final_df` if appropriate, otherwise stick to actual column names.
     5.  **No External Code:** Your code MUST NOT include any `import` statements or `print()` calls. Only pure Pandas/Python logic is allowed.
     6.  **Output Format:** Enclose your entire Python code block within `<result></result>` XML tags.
 
-    ## Example of Desired Output Structure:
+    ## Example of Desired Output Structure (Generic):
     <result>
-    # Example: Find the top 3 administrative districts by total '층수' (floor count)
-    df['층수'] = pd.to_numeric(df['층수'], errors='coerce') # Ensure '층수' is numeric
-    floor_counts = df.groupby('행정구')['층수'].sum().reset_index()
-    sorted_districts = floor_counts.sort_values(by='층수', ascending=False)
-    final_df = sorted_districts.head(3) # Provide contextual data, not just the top one name
+    # Example: Find the top 3 items by total 'Amount'
+    # Ensure 'Amount' column is numeric, coercing errors
+    df['Amount'] = pd.to_numeric(df['Amount'], errors='coerce') 
+    
+    # Group by a categorical column (e.g., 'ProductCategory') and sum the numeric 'Amount'
+    # You should dynamically choose an appropriate categorical column if available.
+    grouped_data = df.groupby('ProductCategory')['Amount'].sum().reset_index()
+    
+    # Sort the results to find top items
+    sorted_data = grouped_data.sort_values(by='Amount', ascending=False)
+    
+    # Assign the result to final_df, providing contextual rows
+    final_df = sorted_data.head(3) 
     </result>
+    """
+    return prompt
+
+def generate_example_questions_prompt(df_types: dict) -> str:
+    """
+    # 주석: DataFrame의 컬럼 타입 정보를 기반으로 사용자에게 보여줄 예시 질문들을 생성하기 위한 프롬프트를 만듭니다.
+    # 주석: LLM에게 다양한 유형의 질문을 JSON 배열 형태로 생성하도록 지시합니다.
+    # 주석: 이 프롬프트는 어떤 데이터셋에도 적용될 수 있도록 일반화되었습니다.
+    """
+    types_str = json.dumps(df_types, ensure_ascii=False, indent=2)
+    
+    prompt = f"""
+    You are an AI assistant specialized in data analysis.
+    Given the following DataFrame column names and their data types, generate 5-7 diverse and insightful analytical questions that a user might ask about this data.
+    The questions should be relevant to the provided column types and potential relationships between them.
+    **Do NOT make assumptions about the domain of the data (e.g., sales, HR, university).** Instead, focus on generic analytical patterns applicable to any tabular data, using the actual column names.
+
+    Focus on common analytical tasks like:
+    -   Finding counts, sums, averages, min/max for numerical columns.
+    -   Grouping by categorical columns and aggregating numerical columns.
+    -   Filtering data based on conditions.
+    -   Identifying top/bottom items.
+    -   Analyzing trends if date columns are present.
+    -   Calculating proportions or percentages.
+    -   Finding unique values or value counts for categorical columns.
+
+    Output the questions as a JSON array of strings. Each string should be a single question in Korean.
+    
+    Example output format:
+    ```json
+    [
+        "각 'Category'별 'Value'의 평균은 어떻게 되나요?",
+        "가장 높은 'Score'를 기록한 상위 3개 'ID'는 무엇인가요?",
+        "'Date' 컬럼을 기준으로 2023년의 월별 총 'Quantity'는 얼마인가요?",
+        "'Department'별 'EmployeeCount' 분포는 어떻게 되나요?",
+        "가장 빈번하게 나타나는 'Status' 값은 무엇인가요?"
+    ]
+    ```
+
+    Here are the DataFrame column names and their data types:
+    ```json
+    {types_str}
+    ```
     """
     return prompt
 
@@ -190,7 +239,7 @@ def execute_generated_code(code: str, df: pd.DataFrame, max_retries: int = 3) ->
                 2.  **Focus on the error:** Analyze the error message (`{error_message}`) to understand the root cause.
                 3.  **Common fixes:**
                     *   **Type Conversion Issues:** If the error indicates a type mismatch (e.g., 'could not convert string to float', 'unsupported operand types'), use `pd.to_numeric(..., errors='coerce')`, `df['column'].astype(str)`, or `pd.to_datetime(..., errors='coerce')` for the relevant columns.
-                    *   **Missing Column/KeyError:** Verify column names against the provided `df_preview` and `df_types`. Ensure you're using the exact column names.
+                    *   **Missing Column/KeyError:** Verify column names against the provided `df_preview` and `df_types`. Ensure you're using the exact column names. If a required column is clearly missing based on the error, suggest an alternative or return an informative error within `final_df`.
                     *   **NaN Handling:** If calculations fail due to `NaN`s, consider `.dropna()`, `.fillna()`, or using aggregation methods that handle `NaN`s (e.g., `sum(skipna=True)`).
                     *   **Logic Errors:** If the error is not syntactic but logical (e.g., trying to average a non-numeric column after type conversion), re-evaluate the pandas operation.
                 4.  **Avoid previous mistakes:** Review the `error_history` to ensure you don't repeat the same error.
@@ -201,7 +250,7 @@ def execute_generated_code(code: str, df: pd.DataFrame, max_retries: int = 3) ->
                 corrected_response = call_gemini_api(error_prompt)
                 corrected_code = extract_code_from_response(corrected_response)
                 
-                if corrected_code and corrected_code != current_code: # 주석: 유효한 새 코드가 생성되었는지 확인
+                if corrected_code and corrected_code.strip() != current_code.strip(): # 주석: 유효한 새 코드가 생성되었는지 확인 (공백 무시)
                     st.info("LLM provided a corrected code. Retrying with the new code.") # 주석: 수정된 코드 수신 알림
                     current_code = corrected_code
                 else:
@@ -219,19 +268,21 @@ def generate_final_answer_prompt(user_query: str, filtered_df: pd.DataFrame) -> 
     # 주석: 필터링되거나 분석된 데이터를 기반으로 사용자 질의에 대한 최종 답변을 생성하기 위한 프롬프트를 만듭니다.
     # 주석: 이 프롬프트는 LLM이 주어진 데이터를 명확하고 간결하게 요약하도록 지시합니다.
     """
-    # 주석: DataFrame을 JSON 문자열로 변환합니다. LLM이 데이터를 구조화된 형태로 이해하기 쉽도록 합니다.
-    # 주석: orient="records"는 각 행을 객체로 표현하는 JSON 배열을 생성합니다.
-    # 주석: force_ascii=False는 한국어 문자가 올바르게 인코딩되도록 합니다.
     try:
         if not filtered_df.empty:
             filtered_json = filtered_df.to_json(orient="records", force_ascii=False, indent=2)
+            
+            # 주석: 너무 긴 JSON 데이터는 LLM의 토큰 한도를 초과할 수 있으므로, 제한을 두는 것이 좋습니다.
+            # 주석: 예를 들어, 10만 글자로 제한 (Gemini 2.0 Flash는 1M 토큰 컨텍스트이지만, 출력 데이터 자체는 간결하게 유지하는 것이 좋습니다.)
+            if len(filtered_json) > 100000:
+                filtered_json = filtered_json[:100000] + "\n... (data truncated due to length)"
+                st.warning("Analyzed data for final answer was too large and was truncated.")
         else:
             filtered_json = "[]" # 주석: DataFrame이 비어있으면 빈 배열을 보냅니다.
     except Exception as e:
         filtered_json = "[]" # 주석: JSON 변환 실패 시 비어있는 배열로 대체합니다.
         st.warning(f"Failed to convert `filtered_df` to JSON for final prompt: {e}. Sending an empty array.") # 주석: JSON 변환 실패 경고
     
-    # 주석: 최종 답변 프롬프트 구성. LLM이 답변을 생성하는 방법에 대한 구체적인 지침을 포함합니다.
     prompt = f"""
     You are a helpful and concise data analysis assistant. Your role is to provide a clear and direct answer to the user's question based *solely* on the provided `Analyzed Data`.
 
@@ -246,7 +297,7 @@ def generate_final_answer_prompt(user_query: str, filtered_df: pd.DataFrame) -> 
     1.  **Direct Answer:** Provide a concise, clear, and direct answer to the user's query.
     2.  **Data-Driven:** Your answer must be entirely derived from the `Analyzed Data` provided. Do not use any external knowledge.
     3.  **Highlight Key Findings:** If applicable, summarize the most important insights or trends visible in the `Analyzed Data` that relate to the query.
-    4.  **Handle Empty Data:** If the `Analyzed Data` is empty or does not contain sufficient information to answer the query, explicitly state that the answer cannot be determined from the provided data.
+    4.  **Handle Empty Data:** If the `Analyzed Data` is empty or does not contain sufficient information to answer the query (e.g., if the generated code returned an empty DataFrame or non-meaningful data), explicitly state that the answer cannot be determined from the provided data or that there are no relevant results.
     5.  **Language:** The answer must be in Korean.
     6.  **Formatting:** Avoid unnecessary formatting, special characters, or code blocks in your final answer. Just plain, clear text.
     """
@@ -254,15 +305,37 @@ def generate_final_answer_prompt(user_query: str, filtered_df: pd.DataFrame) -> 
 
 # --- Streamlit Application ---
 
+@st.cache_data(show_spinner="Generating example questions...") # 주석: 예시 질문 생성을 캐시하여 파일이 변경되지 않는 한 재생성하지 않습니다.
+def get_dynamic_example_questions(df_types: dict) -> list[str]:
+    """
+    # 주석: LLM을 호출하여 현재 DataFrame의 컬럼 정보를 기반으로 동적인 예시 질문들을 생성합니다.
+    # 주석: 이 함수는 Streamlit의 캐시 기능을 사용하여 불필요한 LLM 호출을 방지합니다.
+    """
+    example_prompt = generate_example_questions_prompt(df_types)
+    try:
+        response = call_gemini_api(example_prompt)
+        # 주석: LLM 응답이 JSON 배열 형태일 것으로 예상하고 파싱합니다.
+        questions = json.loads(response)
+        if isinstance(questions, list) and all(isinstance(q, str) for q in questions):
+            return questions
+        else:
+            st.warning("LLM returned malformed example questions JSON. Using generic examples.")
+            return ["Can you provide a summary of the data?", "What are the unique values in each text column?", "Which column has the highest average value?", "Count the number of entries for each category."]
+    except json.JSONDecodeError:
+        st.warning("Failed to parse example questions from LLM. Using generic examples.")
+        return ["Can you provide a summary of the data?", "What are the unique values in each text column?", "Which column has the highest average value?", "Count the number of entries for each category."]
+    except Exception as e:
+        st.warning(f"Error generating example questions: {e}. Using generic examples.")
+        return ["Can you provide a summary of the data?", "What are the unique values in each text column?", "Which column has the highest average value?", "Count the number of entries for each category."]
+
 def main():
     """
     # 주석: Streamlit 웹 애플리케이션의 메인 함수입니다.
     # 주석: 파일 업로드, 질문 입력, LLM 호출, 코드 실행 및 결과 표시의 전체 워크플로우를 관리합니다.
     """
-    # 주석: Streamlit 페이지의 기본 설정 (전체 너비, 페이지 제목)
     st.set_page_config(layout="wide", page_title="AI Data Analysis Assistant")
     st.title("AI Data Analysis Assistant")
-    st.markdown("Upload your Excel or CSV file and ask questions. The AI will generate and execute Python code to analyze your data and provide answers.")
+    st.markdown("Upload any Excel or CSV file, and the AI will help you analyze it by generating and executing Python code.")
 
     uploaded_file = st.file_uploader("Upload your data file (Excel or CSV)", type=["xls", "xlsx", "csv"])
 
@@ -274,10 +347,11 @@ def main():
         try:
             if file_type == 'csv':
                 # 주석: CSV 파일 로드. 다양한 인코딩 시도 (utf-8이 실패할 경우).
+                # 주석: sep=','는 기본값이지만, 명시적으로 지정하여 예상치 못한 구분을 방지합니다.
                 try:
-                    df = pd.read_csv(uploaded_file, encoding='utf-8')
+                    df = pd.read_csv(uploaded_file, encoding='utf-8', sep=',')
                 except UnicodeDecodeError:
-                    df = pd.read_csv(uploaded_file, encoding='cp949') # 주석: 한국어 인코딩 시도
+                    df = pd.read_csv(uploaded_file, encoding='cp949', sep=',') # 주석: 한국어 인코딩 시도
             else:
                 # 주석: Excel 파일 로드.
                 df = pd.read_excel(uploaded_file)
@@ -300,15 +374,9 @@ def main():
         with st.expander("🤖 Data Types (for LLM in JSON)"):
             st.json(df_types)
         
-        # --- Example Questions for User Convenience ---
-        example_questions = [
-            "What are the top 5 administrative districts by the total number of stores in Seoul, categorized by major business type?",
-            "Which administrative district in Seoul has the highest average floor count for cafes?", 
-            "In Seoul, which area has the highest proportion of real estate agencies out of all commercial stores?",
-            "What is the proportion of stores by sub-business type (중분류) in Seongdong-gu?",
-            "Show me the average floor count for all stores in Gangnam-gu, grouped by major business type.",
-            "Can you give me the number of stores in each '행정구' (administrative district)?"
-        ]
+        # --- Dynamic Example Questions ---
+        # 주석: LLM을 통해 동적으로 예시 질문을 가져옵니다. 캐시되어 불필요한 반복 호출을 줄입니다.
+        dynamic_example_questions = get_dynamic_example_questions(df_types)
 
         # 주석: Streamlit 세션 상태를 사용하여 사용자 질의를 유지합니다.
         if "user_query" not in st.session_state:
@@ -322,10 +390,11 @@ def main():
             help="Enter your question here or select from the examples below."
         )
 
-        # 주석: 사용자가 입력이 없으면 예시 질문을 선택할 수 있도록 합니다.
+        # 주석: 사용자가 입력이 없으면 동적 예시 질문을 선택할 수 있도록 합니다.
         user_query_to_process = user_input
         if not user_input:
-            sample_query = st.selectbox("Or select an example question:", [""] + example_questions, key="sample_box")
+            # 주석: 빈 문자열을 첫 번째 옵션으로 추가하여 사용자가 아무것도 선택하지 않음을 명확히 할 수 있습니다.
+            sample_query = st.selectbox("Or select an example question:", [""] + dynamic_example_questions, key="sample_box")
             user_query_to_process = sample_query
 
         # --- "Get Answer" Button ---
